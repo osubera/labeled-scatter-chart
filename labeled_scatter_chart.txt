@@ -1,0 +1,397 @@
+'ssf-begin
+';
+
+'workbook
+'   name;labeled_scatter_chart.xlsm/LabeledScatterChart
+
+'book-identity
+
+'require
+'       ;{0D452EE1-E08F-101A-852E-02608C4D0BB4} 2 0 Microsoft Forms 2.0 Object Library
+
+'worksheet
+'   name;Howto/Sheet1
+
+'cells-formula
+'  address;A1:A3
+'         ;// labeled-scatter-chart
+'         ;// 自律, 自由, 公正, http://paidforeveryone.wordpress.com
+'         ;// Tomizono - mocvba.com
+'  address;A5
+'         ;Generates a scatter chart with label.
+'  address;A7:B8
+'         ;Data required
+'     skip;2
+'         ;3 columns data; such as (x, y, label) with paired numerical data (x, y) and label text.
+'  address;A10:D14
+'         ;Data example
+'     skip;4
+'         ;x
+'         ;y
+'         ;label
+'     skip;1
+'         ;1
+'         ;5
+'         ;carrot
+'     skip;1
+'         ;2
+'         ;6
+'         ;onion
+'     skip;1
+'         ;3
+'         ;4
+'         ;potato
+'  address;A16:B19
+'         ;How to use
+'     skip;2
+'         ;1. Select the data region, or just click a cell inside the data.
+'     skip;1
+'         ;2. Run macro ScatterChartWithLabel.
+'     skip;1
+'         ;3. A new book will be generated with the data, converted data, and the chart.
+'  address;A21:B23
+'         ;Limitation
+'     skip;2
+'         ;Unique label names must be 255 or less.
+'     skip;1
+'         ;This is the maximum series number by the design of Excel chart.
+'  address;A25:B31
+'         ;Customize
+'     skip;2
+'         ;VBA codes are written to be customizable.
+'     skip;1
+'         ;Default* functions defines the look of chart.
+'     skip;1
+'         ;Modify DefaultMarker to change the look of plot markers.
+'     skip;1
+'         ;Modify DefaultMarkerLabel to change the look of plot marker labels.
+'     skip;1
+'         ;Modify DefaultChart to change the look of entire chart.
+'     skip;1
+'         ;Enjoy.
+'  address;A33:B34
+'         ;Inside
+'     skip;2
+'         ;The example above will be transformed into:
+'  address;B36:E39
+'         ;x
+'         ;carrot
+'         ;onion
+'         ;potato
+'         ;1
+'         ;5
+'     skip;2
+'         ;2
+'     skip;1
+'         ;6
+'     skip;1
+'         ;3
+'     skip;2
+'         ;4
+'  address;B41:B43
+'         ;Labels are treated as the series of scatter chart.
+'         ;Unnecessary spaces in labels are trimed.
+'         ;Blank labels are converted to a single space.
+
+'cells-height
+'   unit;pt
+'  address;A5
+'         ;18.75
+
+'cells-font-name
+'  address;A1:E43
+'   repeat;215
+'         ;Calibri
+
+'cells-font-size
+'  address;A1:E43
+'   repeat;20
+'         ;12
+'         ;16
+'   repeat;194
+'         ;12
+
+'cells-font-bold
+
+'cells-font-italic
+
+'cells-h-align
+'  address;B11:D14
+'   repeat;12
+'         ;center
+'  address;B36:E39
+'   repeat;16
+'         ;center
+
+'module
+'   name;LabeledScatter
+'{{{
+Option Explicit
+
+' // labeled-scatter-chart
+' // Fortitudinous, Free, Fair, http://paidforeveryone.wordpress.com
+' // Tomizono - mocvba.com
+
+Public Sub ScatterChartWithLabel()
+    GenerateChart _
+        ExpandToSeries( _
+            CopyToNewBook( _
+                Selection))
+End Sub
+
+' plot marker
+Private Function DefaultMarker(M As Series) As Boolean
+    Dim L As DataLabel
+    
+    ' border color
+    With M.Format.Line
+        .Visible = msoFalse
+        .Transparency = 0
+        .ForeColor.RGB = RGB(255, 0, 0)
+    End With
+    ' inner color
+    With M.Format.Fill
+        .Visible = msoTrue
+        .Solid
+        .Transparency = 0
+        .ForeColor.RGB = RGB(255, 0, 0)
+    End With
+    ' shape
+    M.MarkerStyle = xlMarkerStyleCircle
+    ' size
+    M.MarkerSize = 9
+    
+    For Each L In M.DataLabels
+        DefaultMarkerLabel L
+    Next
+End Function
+
+' plot marker label
+Private Function DefaultMarkerLabel(L As DataLabel) As Boolean
+    ' label font
+    With L.Format.TextFrame2.TextRange.Font
+        .Size = 10
+        '.Size = 14
+        
+        ' Example for English
+        '.NameFarEast = "Consolas"
+        '.Name = "Consolas"
+        
+        ' Example for Japanese
+        '.NameFarEast = "ＭＳ Ｐゴシック"
+        '.Name = "Calibri"
+    End With
+    
+    ' label font color
+    With L.Format.TextFrame2.TextRange.Font.Fill
+        .Visible = msoTrue
+        .Transparency = 0
+        .Solid
+        .ForeColor.RGB = RGB(0, 0, 0)
+    End With
+    
+    ' label background color
+    'L.Format.Fill.ForeColor.RGB = RGB(255, 0, 0)
+End Function
+
+' entire chart
+Private Function DefaultChart(C As Chart) As Boolean
+    C.SetElement msoElementLegendNone
+    C.SetElement msoElementPrimaryValueGridLinesNone
+    
+    With C.PlotArea.Format.Line
+        .Visible = msoTrue
+        .ForeColor.RGB = RGB(0, 0, 0)
+    End With
+    
+    ' marker label position
+    'C.SetElement (msoElementDataLabelLeft)
+    'C.SetElement (msoElementDataLabelRight)
+    C.SetElement (msoElementDataLabelTop)
+    'C.SetElement (msoElementDataLabelBottom)
+    'C.SetElement (msoElementDataLabelCenter)
+End Function
+
+' main functions ---
+
+' Create new book with copy of data
+Private Function CopyToNewBook(Ra As Range) As Range
+    Dim Wb As Workbook
+    Dim Src As Range
+    Dim Dest As Range
+    
+    Set Src = ExpandSelectionIfSingle(Selection)
+    
+    Set Wb = Application.Workbooks.Add()
+    Set Dest = Wb.Worksheets(1).Cells(1)
+    
+    Src.Copy
+    Dest.PasteSpecial xlPasteValues
+    
+    Set CopyToNewBook = Dest.CurrentRegion
+    Set Wb = Nothing
+    Set Src = Nothing
+    Set Dest = Nothing
+End Function
+
+' Y data transform into label-series.
+Private Function ExpandToSeries(Src As Range) As Range
+    Dim Dest As Worksheet
+    Dim Labels As Range
+    Dim Dic As Collection
+    Dim Y As Variant
+    Dim LabelText As String
+    Dim i As Long
+    
+    Set Dest = SafeNextSheet(Src.Worksheet)
+    Set Labels = Src.Columns(3)
+    CleanLabels Labels
+    Set Dic = UniqueLabels(WithoutColumnHeader(Labels), Dest.Rows(1))
+    
+    ' x data
+    Dest.Range("A1:A" & Src.Rows.Count).Value = Src.Columns(1).Value
+    ' y data
+    For i = 2 To Src.Rows.Count
+        Y = Src.Cells(i, 2).Value
+        LabelText = Src.Cells(i, 3).Value
+        Dest.Cells(i, Dic(LabelText)).Value = Y
+    Next
+    
+    Set ExpandToSeries = Dest.Cells(1).CurrentRegion
+    
+    RemoveAllItems Dic
+    Set Dic = Nothing
+    Set Dest = Nothing
+    Set Labels = Nothing
+End Function
+
+' Create scatter chart
+Private Function GenerateChart(Ra As Range) As Chart
+    Dim C As Chart
+    Dim SeriesNum As Long
+    Dim i As Long
+    
+    Set C = Ra.Worksheet.Parent.Charts.Add(After:=Ra.Worksheet)
+    C.ChartType = xlXYScatter
+    C.SetSourceData Source:=Ra, PlotBy:=xlColumns
+    
+    ' show data label as series name
+    C.ApplyDataLabels xlDataLabelsShowLabel, False, False, False, True, False, False, False, False, " "
+    
+    ' next 2 lines are required to change the ChartType immediately
+    C.Activate
+    C.Refresh
+    
+    DefaultChart C
+    
+    SeriesNum = C.SeriesCollection.Count
+    For i = 1 To SeriesNum
+        DefaultMarker C.SeriesCollection(i)
+    Next
+    
+    Set GenerateChart = C
+    Set C = Nothing
+End Function
+
+' label tools ---
+
+' Create label dictionary
+Private Function UniqueLabels(Ra As Range, PushColumnHeaders As Range) As Collection
+    Dim Rb As Range
+    Dim Dic As Collection
+    Dim i As Long
+    
+    Set Dic = New Collection
+    i = 2   ' begins at column B
+    
+    On Error Resume Next
+    For Each Rb In Ra
+        Dic.Add i, Rb.Value
+        If Err.Number = 0 Then
+            ' write series column headers to destination sheet
+            PushColumnHeaders.Cells(i).Value = Rb.Value
+            i = i + 1
+        Else
+            Err.Clear
+        End If
+    Next
+    
+    Set UniqueLabels = Dic
+    Set Dic = Nothing
+    Set Rb = Nothing
+End Function
+
+' Clean up label strings
+Private Function CleanLabels(Ra As Range) As Boolean
+    Dim Rb As Range
+    Dim CleanText As String
+    
+    For Each Rb In Ra.Cells
+        CleanText = Trim(Rb.Value)
+        If CleanText = "" Then CleanText = " "
+        Rb.Value = CleanText
+    Next
+    
+    Set Rb = Nothing
+End Function
+
+' common utilities ---
+
+' remove all items from collection
+Private Function RemoveAllItems(x As Object) As Boolean
+    Dim i As Long
+    Dim iEnd As Long
+    
+    iEnd = x.Count
+    For i = iEnd To 1 Step -1
+        x.Remove i
+    Next
+End Function
+
+' 2nd row and after
+Private Function WithoutColumnHeader(Target As Range) As Range
+    If Target.Rows.Count <= 1 Then Exit Function
+    Set WithoutColumnHeader = Target.Rows("2:" & Target.Rows.Count).Cells
+End Function
+
+' get next sheet, or new
+Private Function SafeNextSheet(Target As Worksheet) As Worksheet
+    On Error GoTo RequiredToAdd
+    
+    Set SafeNextSheet = Target.Parent.Worksheets(Target.Index + 1)
+    Exit Function
+    
+RequiredToAdd:
+    Set SafeNextSheet = Target.Parent.Worksheets.Add(After:=Target)
+End Function
+
+' expand if the target contains only a single cell.
+Private Function ExpandSelectionIfSingle(Target As Range) As Range
+    If IsASingleCell(Target) Then
+        Set ExpandSelectionIfSingle = Target.CurrentRegion
+    Else
+        Set ExpandSelectionIfSingle = Target
+    End If
+End Function
+
+' test wheather the target is a single cell or not; works on all versions except Excel 2013 64 bit.
+Private Function IsASingleCell(Target As Range) As Boolean
+    On Error GoTo MayFailOnExcel2007
+    
+    IsASingleCell = (Target.Cells.Count = 1)
+    Exit Function
+    
+MayFailOnExcel2007:
+    If Err.Number = 6 Then
+        ' overflowed, means very large, larger than 1, maybe
+        IsASingleCell = False
+        Exit Function
+    Else
+        Err.Raise Err.Number
+    End If
+End Function
+
+'}}}
+
+'ssf-end
+
