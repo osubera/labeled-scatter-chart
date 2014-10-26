@@ -1,0 +1,369 @@
+'ssf-begin
+';
+
+'workbook
+'   name;another_labeled_scatter_chart.xlsm/AnotherLabeledScatterChart
+
+'book-identity
+
+'require
+'       ;{0D452EE1-E08F-101A-852E-02608C4D0BB4} 2 0 Microsoft Forms 2.0 Object Library
+
+'worksheet
+'   name;Howto/Sheet1
+
+'cells-formula
+'  address;A1:A3
+'         ;// another-labeled-scatter-chart
+'         ;// 自律, 自由, 公正, http://paidforeveryone.wordpress.com
+'         ;// Tomizono - mocvba.com
+'  address;A5
+'         ;Generates a scatter chart with label.  Another way.
+'  address;A7:B8
+'         ;Data required
+'     skip;2
+'         ;3 columns data; such as (x, y, label) with paired numerical data (x, y) and label text.
+'  address;A10:D14
+'         ;Data example
+'     skip;4
+'         ;x
+'         ;y
+'         ;label
+'     skip;1
+'         ;1
+'         ;5
+'         ;carrot
+'     skip;1
+'         ;2
+'         ;6
+'         ;onion
+'     skip;1
+'         ;3
+'         ;4
+'         ;potato
+'  address;A16:B19
+'         ;How to use
+'     skip;2
+'         ;1. Select the data region, or just click a cell inside the data.
+'     skip;1
+'         ;2. Run macro ScatterChartWithLabel.
+'     skip;1
+'         ;3. A new book will be generated with the data, and the chart.
+'  address;A21:B23
+'         ;Better than labeled-scatter-chart
+'     skip;2
+'         ;This can handle label names more than 255.
+'     skip;1
+'         ;Faster.
+'  address;A25:B26
+'         ;Worse than labeled-scatter-chart
+'     skip;2
+'         ;Label assignment is not reliable.
+'  address;A28:B34
+'         ;Customize
+'     skip;2
+'         ;VBA codes are written to be customizable.
+'     skip;1
+'         ;Default* functions defines the look of chart.
+'     skip;1
+'         ;Modify DefaultMarker to change the look of plot markers.
+'     skip;1
+'         ;Modify DefaultMarkerLabel to change the look of plot marker labels.
+'     skip;1
+'         ;Modify DefaultChart to change the look of entire chart.
+'     skip;1
+'         ;Enjoy.
+'  address;A36:B43
+'         ;Inside
+'     skip;2
+'         ;Marker labels have property that can overwrite text.
+'     skip;1
+'         ;A problem is the sequence of label objects, which is not documented clearly.
+'     skip;1
+'         ;Maybe, but I'm not sure, the label sequence is equal to the data sequene on the worksheet. 
+'     skip;1
+'         ;Otherwise, labels may be assigned to wrong markers.
+'     skip;1
+'         ;So, this macro provides sum of squares between chart and sheet.
+'     skip;1
+'         ;Additional check is the label text (label-xy) which is space separated x and y.
+'     skip;1
+'         ;Note, label-x, label-y, label-xy come from different variables inside.
+'  address;B45:I48
+'         ;x
+'         ;y
+'         ;label
+'         ;label-x
+'         ;label-y
+'         ;diff-x
+'         ;diff-y
+'         ;label-xy
+'         ;1
+'         ;5
+'         ;carrot
+'         ;1
+'         ;5
+'   repeat;2
+'         ;=ABS(RC[-5]-RC[-2])
+'         ;1 5
+'         ;2
+'         ;6
+'         ;onion
+'         ;2
+'         ;6
+'   repeat;2
+'         ;=ABS(RC[-5]-RC[-2])
+'         ;2 6
+'         ;3
+'         ;4
+'         ;potato
+'         ;3
+'         ;4
+'   repeat;2
+'         ;=ABS(RC[-5]-RC[-2])
+'         ;3 4
+'  address;B50:D50
+'         ;sum of squares
+'     skip;1
+'         ;=SUMSQ(R[-4]C[3]:R[-2]C[4])
+
+'cells-height
+'   unit;pt
+'  address;A5
+'         ;18.75
+
+'cells-font-name
+'  address;A1:I50
+'   repeat;450
+'         ;Calibri
+
+'cells-font-size
+'  address;A1:I50
+'   repeat;36
+'         ;12
+'         ;16
+'   repeat;413
+'         ;12
+
+'cells-font-bold
+
+'cells-font-italic
+
+'cells-h-align
+'  address;B11:D14
+'   repeat;12
+'         ;center
+'  address;B45:I48
+'   repeat;3
+'         ;center
+'     skip;1
+'   repeat;28
+'         ;center
+'  address;D50
+'         ;left
+
+'module
+'   name;LabeledScatter
+'{{{
+Option Explicit
+
+' // labeled-scatter-chart
+' // Fortitudinous, Free, Fair, http://paidforeveryone.wordpress.com
+' // Tomizono - mocvba.com
+
+Public Sub ScatterChartWithLabel()
+    GenerateChart _
+        CopyToNewBook( _
+            Selection)
+End Sub
+
+' plot marker
+Private Function DefaultMarker(M As Series) As Boolean
+    Dim L As DataLabel
+    
+    ' border color
+    With M.Format.Line
+        .Visible = msoFalse
+        .Transparency = 0
+        .ForeColor.RGB = RGB(255, 0, 0)
+    End With
+    ' inner color
+    With M.Format.Fill
+        .Visible = msoTrue
+        .Solid
+        .Transparency = 0
+        .ForeColor.RGB = RGB(255, 0, 0)
+    End With
+    ' shape
+    M.MarkerStyle = xlMarkerStyleCircle
+    ' size
+    M.MarkerSize = 9
+    
+    For Each L In M.DataLabels
+        DefaultMarkerLabel L
+    Next
+End Function
+
+' plot marker label
+Private Function DefaultMarkerLabel(L As DataLabel) As Boolean
+    ' label font
+    With L.Format.TextFrame2.TextRange.Font
+        .Size = 10
+        '.Size = 14
+        
+        ' Example for English
+        '.NameFarEast = "Consolas"
+        '.Name = "Consolas"
+        
+        ' Example for Japanese
+        '.NameFarEast = "ＭＳ Ｐゴシック"
+        '.Name = "Calibri"
+    End With
+    
+    ' label font color
+    With L.Format.TextFrame2.TextRange.Font.Fill
+        .Visible = msoTrue
+        .Transparency = 0
+        .Solid
+        .ForeColor.RGB = RGB(0, 0, 0)
+    End With
+    
+    ' label background color
+    'L.Format.Fill.ForeColor.RGB = RGB(255, 0, 0)
+End Function
+
+' entire chart
+Private Function DefaultChart(C As Chart) As Boolean
+    C.SetElement msoElementLegendNone
+    C.SetElement msoElementPrimaryValueGridLinesNone
+    C.SetElement msoElementChartTitleNone
+    
+    With C.PlotArea.Format.Line
+        .Visible = msoTrue
+        .ForeColor.RGB = RGB(0, 0, 0)
+    End With
+    
+    ' marker label position
+    'C.SetElement (msoElementDataLabelLeft)
+    'C.SetElement (msoElementDataLabelRight)
+    C.SetElement (msoElementDataLabelTop)
+    'C.SetElement (msoElementDataLabelBottom)
+    'C.SetElement (msoElementDataLabelCenter)
+End Function
+
+' main functions ---
+
+' Create new book with copy of data
+Private Function CopyToNewBook(Ra As Range) As Range
+    Dim Wb As Workbook
+    Dim Src As Range
+    Dim Dest As Range
+    
+    Set Src = ExpandSelectionIfSingle(Selection)
+    
+    Set Wb = Application.Workbooks.Add()
+    Set Dest = Wb.Worksheets(1).Cells(1)
+    
+    Src.Copy
+    Dest.PasteSpecial xlPasteValues
+    
+    Set CopyToNewBook = Dest.CurrentRegion
+    Set Wb = Nothing
+    Set Src = Nothing
+    Set Dest = Nothing
+End Function
+
+' Create scatter chart
+Private Function GenerateChart(Ra As Range) As Chart
+    Dim C As Chart
+    Dim Labels As Range
+    Dim SeriesNum As Long
+    Dim i As Long
+    Dim X As Variant
+    Dim Y As Variant
+    Dim SS As Double
+    
+    Set C = Ra.Worksheet.Parent.Charts.Add(After:=Ra.Worksheet)
+    C.ChartType = xlXYScatter
+    C.SetSourceData Source:=Ra.Columns("A:B"), PlotBy:=xlColumns
+    
+    ' show data label as x and y values
+    C.ApplyDataLabels xlDataLabelsShowLabel, False, False, False, False, True, True, False, False, " "
+    
+    ' next 2 lines are required to change the ChartType immediately
+    C.Activate
+    C.Refresh
+    
+    DefaultChart C
+    
+    SeriesNum = C.SeriesCollection.Count
+    For i = 1 To SeriesNum
+        DefaultMarker C.SeriesCollection(i)
+    Next
+    
+    ' overwrite label text
+    Set Labels = WithoutColumnHeader(Ra.Columns(3))
+    With C.SeriesCollection(1)
+        X = .XValues
+        Y = .Values
+        For i = 1 To Labels.Count
+            Labels.Cells(i).Offset(0, 5).Value = .DataLabels(i).Text
+            .DataLabels(i).Text = Labels.Cells(i).Value
+            Labels.Cells(i).Offset(0, 1).Value = X(i)
+            Labels.Cells(i).Offset(0, 2).Value = Y(i)
+            Labels.Cells(i).Offset(0, 3).Formula = "=abs(A" & i + 1 & "-D" & i + 1 & ")"
+            Labels.Cells(i).Offset(0, 4).Formula = "=abs(B" & i + 1 & "-E" & i + 1 & ")"
+            ' Labels.Cells(i).Offset(0, 3).FormulaR1C1 = "=RC[-5]-RC[-2]"
+        Next
+    End With
+    
+    ' columns for validation
+    Ra.Cells(1).Range("D1:H1").Value = Array("label-x", "label-y", "diff-x", "diff-y", "label-xy")
+    
+    ' check sum of square
+    SS = Application.WorksheetFunction.SumSq(Labels.Offset(0, 3), Labels.Offset(0, 4))
+    If SS <> 0 Then MsgBox "sum of square = " & SS, vbOKOnly, "another-labeled-scatter-chart"
+    
+    Set GenerateChart = C
+    Set C = Nothing
+    Set Labels = Nothing
+End Function
+
+' common utilities ---
+
+' 2nd row and after
+Private Function WithoutColumnHeader(Target As Range) As Range
+    If Target.Rows.Count <= 1 Then Exit Function
+    Set WithoutColumnHeader = Target.Rows("2:" & Target.Rows.Count).Cells
+End Function
+
+' expand if the target contains only a single cell.
+Private Function ExpandSelectionIfSingle(Target As Range) As Range
+    If IsASingleCell(Target) Then
+        Set ExpandSelectionIfSingle = Target.CurrentRegion
+    Else
+        Set ExpandSelectionIfSingle = Target
+    End If
+End Function
+
+' test wheather the target is a single cell or not; works on all versions except Excel 2013 64 bit.
+Private Function IsASingleCell(Target As Range) As Boolean
+    On Error GoTo MayFailOnExcel2007
+    
+    IsASingleCell = (Target.Cells.Count = 1)
+    Exit Function
+    
+MayFailOnExcel2007:
+    If Err.Number = 6 Then
+        ' overflowed, means very large, larger than 1, maybe
+        IsASingleCell = False
+        Exit Function
+    Else
+        Err.Raise Err.Number
+    End If
+End Function
+
+'}}}
+
+'ssf-end
+
