@@ -22,13 +22,13 @@ with paired numerical data (x, y) and label text.
 
 Excel Books
 -----------
-- [another-labeled-scatter-chart.xlsm](another-labeled-scatter-chart.xlsm)
-- [labeled-scatter-chart.xlsm](labeled-scatter-chart.xlsm)
+- [another_labeled_scatter_chart.xlsm](another_labeled_scatter_chart.xlsm)
+- [labeled_scatter_chart.xlsm](labeled_scatter_chart.xlsm)
 
 Sources
 -------
-- [another-labeled-scatter-chart.txt](another-labeled-scatter-chart.txt)
-- [labeled-scatter-chart.txt](labeled-scatter-chart.txt)
+- [another_labeled_scatter_chart.txt](another_labeled_scatter_chart.txt)
+- [labeled_scatter_chart.txt](labeled_scatter_chart.txt)
 
 Differences between two Workbooks
 ---------------------------------
